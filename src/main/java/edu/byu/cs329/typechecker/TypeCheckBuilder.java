@@ -11,17 +11,28 @@ import java.util.Deque;
 import java.util.List;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BooleanLiteral;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.NullLiteral;
 import org.eclipse.jdt.core.dom.NumberLiteral;
+import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.WhileStatement;
+import org.eclipse.jdt.core.dom.PrefixExpression.Operator;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicNode;
@@ -40,8 +51,8 @@ public class TypeCheckBuilder {
     String className = null;
     Deque<List<DynamicNode>> typeCheckStack = null;
     Deque<String> typeStack = null;
-    int blockCounter = 0;
-    int statementCounter = 0;
+    int blockCounter = 0; // will customize in next lab
+    int statementCounter = 0; // will customize in next lab
 
     public Visitor(SymbolTable symbolTable) {
       this.symbolTable = symbolTable;
@@ -189,6 +200,133 @@ public class TypeCheckBuilder {
     }
 
     @Override
+    public boolean visit(Assignment node) {
+      pushTypeCheck(new ArrayList<>());
+      Expression left = node.getLeftHandSide();
+      left.accept(this);
+      String leftType = popType();
+      Expression right = node.getRightHandSide();
+      right.accept(this);
+      String rightType = popType();
+
+      DynamicTest test = generateTypeCompatibleTestAndPushResultingType(leftType, rightType);
+      peekTypeCheck().add(test);
+      String testResultType = popType();
+      
+      pushType(testResultType);
+      return false;
+    }
+
+    // @Override
+    // public boolean visit(IfStatement node) {
+    //   return false;
+    // }
+
+    // @Override
+    // public boolean visit(WhileStatement node) {
+    //   return false;
+    // }
+
+    // @Override
+    // public boolean visit(ReturnStatement node) {
+    //   return false;
+    // }
+
+    @Override
+    public boolean visit(PrefixExpression node) {
+      pushTypeCheck(new ArrayList<>());
+      PrefixExpression.Operator operator = node.getOperator();
+      String type = TypeCheckTypes.VOID;
+
+      if (operator.equals(PrefixExpression.Operator.NOT)) {
+        Expression operand = node.getOperand();
+        operand.accept(this);
+        type = popType();
+        DynamicTest test = generateTypeCompatibleTestAndPushResultingType(TypeCheckTypes.BOOL, type);
+        peekTypeCheck().add(test);
+        type = popType();
+      }
+
+      if (!TypeCheckTypes.isError(type)) {
+        type = TypeCheckTypes.BOOL;
+      }
+
+      pushType(type);
+      return false;
+    }
+
+    // int for +, *, and -
+    // boolean for &&, ||, <, and ==
+    @Override
+    public boolean visit(InfixExpression node) {
+      pushTypeCheck(new ArrayList<>());
+      InfixExpression.Operator operator = node.getOperator();
+      Expression leftOperand = node.getLeftOperand();
+      leftOperand.accept(this);
+      String leftType = popType();
+      Expression rightOperand = node.getRightOperand();
+      rightOperand.accept(this);
+      String rightType = popType();
+
+      String type = TypeCheckTypes.VOID;
+      if (operator.equals(InfixExpression.Operator.PLUS) ||
+          operator.equals(InfixExpression.Operator.TIMES) ||
+          operator.equals(InfixExpression.Operator.MINUS)) {
+        type = TypeCheckTypes.INT;
+        DynamicTest leftTest = generateTypeCompatibleTestAndPushResultingType(TypeCheckTypes.INT, leftType);
+        peekTypeCheck().add(leftTest);
+        leftType = popType();
+        DynamicTest rightTest = generateTypeCompatibleTestAndPushResultingType(TypeCheckTypes.INT, rightType);
+        peekTypeCheck().add(rightTest);
+        rightType = popType();
+      } else if (operator.equals(InfixExpression.Operator.CONDITIONAL_AND) ||
+          operator.equals(InfixExpression.Operator.CONDITIONAL_OR)) {
+        type = TypeCheckTypes.BOOL;
+        DynamicTest leftTest = generateTypeCompatibleTestAndPushResultingType(TypeCheckTypes.BOOL, leftType);
+        peekTypeCheck().add(leftTest);
+        leftType = popType();
+        DynamicTest rightTest = generateTypeCompatibleTestAndPushResultingType(TypeCheckTypes.BOOL, rightType);
+        peekTypeCheck().add(rightTest);
+        rightType = popType();
+      } else if (operator.equals(InfixExpression.Operator.LESS)) {
+        type = TypeCheckTypes.BOOL;
+        DynamicTest leftTest = generateTypeCompatibleTestAndPushResultingType(TypeCheckTypes.INT, leftType);
+        peekTypeCheck().add(leftTest);
+        leftType = popType();
+        DynamicTest rightTest = generateTypeCompatibleTestAndPushResultingType(TypeCheckTypes.INT, rightType);
+        peekTypeCheck().add(rightTest);
+        rightType = popType();
+      } else if (operator.equals(InfixExpression.Operator.EQUALS)) {
+        type = TypeCheckTypes.BOOL;
+        DynamicTest test = generateTypeCompatibleTestAndPushResultingType(leftType, rightType);
+        peekTypeCheck().add(test);
+        leftType = popType();
+      }
+
+      if (TypeCheckTypes.isError(leftType) || TypeCheckTypes.isError(rightType)) {
+        type = TypeCheckTypes.ERROR;
+      }
+
+      pushType(type);
+      return false;
+    }
+
+    // @Override
+    // public boolean visit(FieldAccess node) {
+    //   return false;
+    // }
+
+    // @Override
+    // public boolean visit(QualifiedName node) {
+    //   return false;
+    // }
+
+    // @Override
+    // public boolean visit(MethodInvocation node) {
+    //   return false;
+    // }
+
+    @Override
     public void endVisit(CompilationUnit node) {
       String name = "CompilationUnit ";
       generateProofAndAddToObligations(name);
@@ -244,6 +382,60 @@ public class TypeCheckBuilder {
       String name = node.toString();
       generateProofAndAddToObligations(name);
     }
+
+    @Override
+    public void endVisit(Assignment node) {
+      String name = generateStatementName();
+      generateProofAndAddToObligations(name);
+    }
+
+    // @Override
+    // public void endVisit(IfStatement node) {
+    //   String name = node.toString();
+    //   generateProofAndAddToObligations(name);
+    // }
+
+    // @Override
+    // public void endVisit(WhileStatement node) {
+    //   String name = node.toString();
+    //   generateProofAndAddToObligations(name);
+    // }
+
+    // @Override
+    // public void endVisit(ReturnStatement node) {
+    //   String name = node.toString();
+    //   generateProofAndAddToObligations(name);
+    // }
+
+    @Override
+    public void endVisit(PrefixExpression node) {
+      String name = "PrefixExpression " + node.toString();
+      generateProofAndAddToObligations(name);
+    }
+
+    @Override
+    public void endVisit(InfixExpression node) {
+      String name = "InfixExpression " + node.toString();
+      generateProofAndAddToObligations(name);
+    }
+
+    // @Override
+    // public void endVisit(FieldAccess node) {
+    //   String name = node.toString();
+    //   generateProofAndAddToObligations(name);
+    // }
+
+    // @Override
+    // public void endVisit(QualifiedName node) {
+    //   String name = node.toString();
+    //   generateProofAndAddToObligations(name);
+    // }
+
+    // @Override
+    // public void endVisit(MethodInvocation node) {
+    //   String name = node.toString();
+    //   generateProofAndAddToObligations(name);
+    // }
 
     private void resetCounters() {
       statementCounter = 0;
