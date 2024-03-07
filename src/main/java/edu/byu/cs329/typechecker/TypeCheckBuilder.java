@@ -242,10 +242,19 @@ public class TypeCheckBuilder {
       return false;
     }
 
-    // @Override
-    // public boolean visit(WhileStatement node) {
-    //   return false;
-    // }
+    @Override
+    public boolean visit(WhileStatement node) {
+      pushTypeCheck(new ArrayList<>());
+      Expression exp = node.getExpression();
+      exp.accept(this);
+      String expType = popType();
+      Statement block = node.getBody();
+      block.accept(this);
+      String blockType = popType();
+      DynamicTest test = generateTypeCompatibleTestAndPushResultingType(TypeCheckTypes.BOOL, expType, TypeCheckTypes.VOID, blockType, TypeCheckTypes.VOID);
+      peekTypeCheck().add(test);
+      return false;
+    }
 
     @Override
     public boolean visit(ReturnStatement node) {
@@ -400,11 +409,11 @@ public class TypeCheckBuilder {
       generateProofAndAddToObligations(name);
     }
 
-    // @Override
-    // public void endVisit(WhileStatement node) {
-    //   String name = node.toString();
-    //   generateProofAndAddToObligations(name);
-    // }
+    @Override
+    public void endVisit(WhileStatement node) {
+      String name = generateStatementName();
+      generateProofAndAddToObligations(name);
+    }
 
     @Override
     public void endVisit(ReturnStatement node) {

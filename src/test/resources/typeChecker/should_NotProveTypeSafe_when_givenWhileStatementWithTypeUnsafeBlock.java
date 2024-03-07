@@ -2,7 +2,7 @@ package typeChecker;
 
 public class C {
   void m() {
-    if (true) {
+    while (true) {
         int a = true;
     }
   }

@@ -207,6 +207,53 @@ public class TypeCheckBuilderTests {
   }
 
   // WhileStatemet
+  @TestFactory
+  @Tag("WhileStatement")
+  @DisplayName("Should prove type safe when given while statement with compatible types")
+  Stream<DynamicNode> should_proveTypeSafe_when_givenWhileStatementWithCompatibleTypes() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenWhileStatementWithCompatibleTypes.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+    DynamicTest test = DynamicTest.dynamicTest("isTypeSafe", () -> assertTrue(isTypeSafe));
+    tests.add((DynamicNode)test);
+    return tests.stream();
+  }
+
+  @TestFactory
+  @Tag("WhileStatement")
+  @DisplayName("Should not prove type safe when given while statement with type unsafe expression")
+  Stream<DynamicNode> should_NotProveTypeSafe_when_givenWhileStatementWithTypeUnsafeExpression() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenWhileStatementWithTypeUnsafeExpression.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+
+    // Toggle as desired
+    // 
+    // Option 1: mvn exec:java shows the details of the typeproof for visual inspection
+    // return tests.stream();
+    //
+    // Option 2: test only isNotTypeSafe and show no details
+    DynamicTest test = DynamicTest.dynamicTest("isNotTypeSafe", () -> assertFalse(isTypeSafe));
+    return Arrays.asList((DynamicNode)test).stream();
+  }
+
+  @TestFactory
+  @Tag("IfStatement")
+  @DisplayName("Should not prove type safe when given while statement with type unsafe block")
+  Stream<DynamicNode> should_NotProveTypeSafe_when_givenWhileStatementWithTypeUnsafeBlock() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenWhileStatementWithTypeUnsafeBlock.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+
+    // Toggle as desired
+    // 
+    // Option 1: mvn exec:java shows the details of the typeproof for visual inspection
+    // return tests.stream();
+    //
+    // Option 2: test only isNotTypeSafe and show no details
+    DynamicTest test = DynamicTest.dynamicTest("isNotTypeSafe", () -> assertFalse(isTypeSafe));
+    return Arrays.asList((DynamicNode)test).stream();
+  }
 
   
   // ReturnStatement
