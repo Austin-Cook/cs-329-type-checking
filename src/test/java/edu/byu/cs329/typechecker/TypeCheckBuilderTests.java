@@ -140,13 +140,105 @@ public class TypeCheckBuilderTests {
   }
 
   // IfStatement
+  @TestFactory
+  @Tag("IfStatement")
+  @DisplayName("Should prove type safe when given if statement with compatible types")
+  Stream<DynamicNode> should_proveTypeSafe_when_givenIfStatementWithCompatibleTypes() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenIfStatementWithCompatibleTypes.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+    DynamicTest test = DynamicTest.dynamicTest("isTypeSafe", () -> assertTrue(isTypeSafe));
+    tests.add((DynamicNode)test);
+    return tests.stream();
+  }
 
+  @TestFactory
+  @Tag("IfStatement")
+  @DisplayName("Should not prove type safe when given if statement with type unsafe expression")
+  Stream<DynamicNode> should_NotProveTypeSafe_when_givenIfStatementWithTypeUnsafeExpression() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenIfStatementWithTypeUnsafeExpression.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+
+    // Toggle as desired
+    // 
+    // Option 1: mvn exec:java shows the details of the typeproof for visual inspection
+    // return tests.stream();
+    //
+    // Option 2: test only isNotTypeSafe and show no details
+    DynamicTest test = DynamicTest.dynamicTest("isNotTypeSafe", () -> assertFalse(isTypeSafe));
+    return Arrays.asList((DynamicNode)test).stream();
+  }
+
+  @TestFactory
+  @Tag("IfStatement")
+  @DisplayName("Should not prove type safe when given if statement with type unsafe then statement")
+  Stream<DynamicNode> should_NotProveTypeSafe_when_givenIfStatementWithTypeUnsafeThenStatement() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenIfStatementWithTypeUnsafeThenStatement.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+
+    // Toggle as desired
+    // 
+    // Option 1: mvn exec:java shows the details of the typeproof for visual inspection
+    // return tests.stream();
+    //
+    // Option 2: test only isNotTypeSafe and show no details
+    DynamicTest test = DynamicTest.dynamicTest("isNotTypeSafe", () -> assertFalse(isTypeSafe));
+    return Arrays.asList((DynamicNode)test).stream();
+  }
+
+  @TestFactory
+  @Tag("IfStatement")
+  @DisplayName("Should not prove type safe when given if statement with type unsafe else statement")
+  Stream<DynamicNode> should_NotProveTypeSafe_when_givenIfStatementWithTypeUnsafeElseStatement() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenIfStatementWithTypeUnsafeElseStatement.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+
+    // Toggle as desired
+    // 
+    // Option 1: mvn exec:java shows the details of the typeproof for visual inspection
+    // return tests.stream();
+    //
+    // Option 2: test only isNotTypeSafe and show no details
+    DynamicTest test = DynamicTest.dynamicTest("isNotTypeSafe", () -> assertFalse(isTypeSafe));
+    return Arrays.asList((DynamicNode)test).stream();
+  }
 
   // WhileStatemet
 
   
   // ReturnStatement
+  @TestFactory
+  @Tag("ReturnStatement")
+  @DisplayName("Should prove type safe when given return with compatible type")
+  Stream<DynamicNode> should_proveTypeSafe_when_givenReturnWithCompatibleType() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenReturnWithCompatibleType.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+    DynamicTest test = DynamicTest.dynamicTest("isTypeSafe", () -> assertTrue(isTypeSafe));
+    tests.add((DynamicNode)test);
+    return tests.stream();
+  }
 
+  @TestFactory
+  @Tag("ReturnStatement")
+  @DisplayName("Should not prove type safe when given return with incompatible type")
+  Stream<DynamicNode> should_NotProveTypeSafe_when_givenReturnWithIncompatibleType() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenReturnWithIncompatibleType.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+
+    // Toggle as desired
+    // 
+    // Option 1: mvn exec:java shows the details of the typeproof for visual inspection
+    // return tests.stream();
+    //
+    // Option 2: test only isNotTypeSafe and show no details
+    DynamicTest test = DynamicTest.dynamicTest("isNotTypeSafe", () -> assertFalse(isTypeSafe));
+    return Arrays.asList((DynamicNode)test).stream();
+  }
 
   // PrefixExpression
   @TestFactory
