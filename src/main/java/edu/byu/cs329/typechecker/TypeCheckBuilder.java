@@ -463,7 +463,7 @@ public class TypeCheckBuilder {
 
     @Override
     public void endVisit(ReturnStatement node) {
-      String name = node.toString();
+      String name = generateStatementName();
       generateProofAndAddToObligations(name);
     }
 
