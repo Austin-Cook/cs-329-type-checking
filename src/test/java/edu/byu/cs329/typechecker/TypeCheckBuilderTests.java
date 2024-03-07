@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.DynamicTest;
@@ -410,14 +409,114 @@ public class TypeCheckBuilderTests {
     return Arrays.asList((DynamicNode)test).stream();
   }
 
-
-
   // FieldAccess
+  @TestFactory
+  @Tag("FieldAccess")
+  @DisplayName("Should prove type safe when given field access with compatible type")
+  Stream<DynamicNode> should_proveTypeSafe_when_givenFieldAccessWithCompatibleType() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenFieldAccessWithCompatibleType.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+    DynamicTest test = DynamicTest.dynamicTest("isTypeSafe", () -> assertTrue(isTypeSafe));
+    tests.add((DynamicNode)test);
+    return tests.stream();
+  }
 
+  @TestFactory
+  @Tag("FieldAccess")
+  @DisplayName("Should not prove type safe when given field access with incompatible type")
+  Stream<DynamicNode> should_NotProveTypeSafe_when_givenFieldAccessWithIncompatibleType() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenFieldAccessWithIncompatibleType.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+
+    // Toggle as desired
+    // 
+    // Option 1: mvn exec:java shows the details of the typeproof for visual inspection
+    // return tests.stream();
+    //
+    // Option 2: test only isNotTypeSafe and show no details
+    DynamicTest test = DynamicTest.dynamicTest("isNotTypeSafe", () -> assertFalse(isTypeSafe));
+    return Arrays.asList((DynamicNode)test).stream();
+  }
 
   // QualifiedName
+  @TestFactory
+  @Tag("QualifiedName")
+  @DisplayName("Should prove type safe when given qualified name with compatible type")
+  Stream<DynamicNode> should_proveTypeSafe_when_givenQualifiedNameWithCompatibleType() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenQualifiedNameWithCompatibleType.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+    DynamicTest test = DynamicTest.dynamicTest("isTypeSafe", () -> assertTrue(isTypeSafe));
+    tests.add((DynamicNode)test);
+    return tests.stream();
+  }
 
+  @TestFactory
+  @Tag("QualifiedName")
+  @DisplayName("Should not prove type safe when given qualified name with incompatible type")
+  Stream<DynamicNode> should_NotProveTypeSafe_when_givenQualifiedNameWithIncompatibleType() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenQualifiedNameWithIncompatibleType.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+
+    // Toggle as desired
+    // 
+    // Option 1: mvn exec:java shows the details of the typeproof for visual inspection
+    // return tests.stream();
+    //
+    // Option 2: test only isNotTypeSafe and show no details
+    DynamicTest test = DynamicTest.dynamicTest("isNotTypeSafe", () -> assertFalse(isTypeSafe));
+    return Arrays.asList((DynamicNode)test).stream();
+  }
 
   // MethodInvocation
+  @TestFactory
+  @Tag("MethodInvocation")
+  @DisplayName("Should prove type safe when given method invocation with compatible types")
+  Stream<DynamicNode> should_proveTypeSafe_when_givenMethodInvocationWithCompatibleTypes() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenMethodInvocationWithCompatibleTypes.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+    DynamicTest test = DynamicTest.dynamicTest("isTypeSafe", () -> assertTrue(isTypeSafe));
+    tests.add((DynamicNode)test);
+    return tests.stream();
+  }
 
+  @TestFactory
+  @Tag("MethodInvocation")
+  @DisplayName("Should not prove type safe when given method invocation with incorrect number of parameters")
+  Stream<DynamicNode> should_NotProveTypeSafe_when_givenMethodInvocationWithIncorrectNumberOfParameters() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenMethodInvocationWithIncorrectNumberOfParameters.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+
+    // Toggle as desired
+    // 
+    // Option 1: mvn exec:java shows the details of the typeproof for visual inspection
+    // return tests.stream();
+    //
+    // Option 2: test only isNotTypeSafe and show no details
+    DynamicTest test = DynamicTest.dynamicTest("isNotTypeSafe", () -> assertFalse(isTypeSafe));
+    return Arrays.asList((DynamicNode)test).stream();
+  }
+
+  @TestFactory
+  @Tag("MethodInvocation")
+  @DisplayName("Should not prove type safe when given method invocation with parameters with incompatable types")
+  Stream<DynamicNode> should_NotProveTypeSafe_when_givenMethodInvocationWithParametersWithIncompatableTypes() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenMethodInvocationWithParametersWithIncompatableTypes.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+
+    // Toggle as desired
+    // 
+    // Option 1: mvn exec:java shows the details of the typeproof for visual inspection
+    // return tests.stream();
+    //
+    // Option 2: test only isNotTypeSafe and show no details
+    DynamicTest test = DynamicTest.dynamicTest("isNotTypeSafe", () -> assertFalse(isTypeSafe));
+    return Arrays.asList((DynamicNode)test).stream();
+  }
 }

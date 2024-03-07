@@ -325,20 +325,63 @@ public class TypeCheckBuilder {
       return false;
     }
 
-    // @Override
-    // public boolean visit(FieldAccess node) {
-    //   return false;
-    // }
+    @Override
+    public boolean visit(FieldAccess node) {
+      pushTypeCheck(new ArrayList<>());
+      String qualifier = symbolTable.getType("this");
+      String fieldName = AstNodePropertiesUtils.getName(node);
+      String name = TypeCheckUtils.buildName(qualifier, fieldName);
+      String type = symbolTable.getType(name);
+      generateLookupTestAndAddToObligations(name, type);
+      pushType(type);
+      return false;
+    }
 
-    // @Override
-    // public boolean visit(QualifiedName node) {
-    //   return false;
-    // }
+    @Override
+    public boolean visit(QualifiedName node) {
+      pushTypeCheck(new ArrayList<>());
+      String qualifier = AstNodePropertiesUtils.getQualifier(node);
+      String fieldName = AstNodePropertiesUtils.getName(node);
+      String name = TypeCheckUtils.buildName(qualifier, fieldName);
+      String type = symbolTable.getType(name);
+      generateLookupTestAndAddToObligations(name, type);
+      pushType(type);
+      return false;
+    }
 
-    // @Override
-    // public boolean visit(MethodInvocation node) {
-    //   return false;
-    // }
+    @Override
+    public boolean visit(MethodInvocation node) {
+      pushTypeCheck(new ArrayList<>());
+      Expression exp = node.getExpression();
+      String qualifier = (exp == null) ? className : AstNodePropertiesUtils.getName((SimpleName) exp);
+      String methodName = AstNodePropertiesUtils.getName(node);
+      String name = TypeCheckUtils.buildName(qualifier, methodName);
+      String methodReturnType = symbolTable.getType(name);
+      List<SimpleImmutableEntry<String, String>> parameterTypeList = symbolTable.getParameterTypeList(name);
+      List<Expression> argumentList = AstNodePropertiesUtils.getArguments(node);
+      
+      DynamicTest test = generateArgumentSizeTestAndPushResultingType(parameterTypeList.size(), argumentList.size());
+      peekTypeCheck().add(test);
+      String type = popType();
+      if (TypeCheckTypes.isError(type)) {
+        pushType(type);
+        return false;
+      }
+
+      List<List<String>> pairs = new ArrayList<>();
+      for (int i = 0; i < parameterTypeList.size(); i++) {
+        String expectedType = parameterTypeList.get(i).getValue();
+        Expression argument = argumentList.get(i);
+        argument.accept(this);
+        String actualType = popType();
+        pairs.add(new ArrayList<String>(Arrays.asList(expectedType, actualType)));
+      }
+      test = generateTypeCompatibleTestAndPushResultingType(pairs, methodReturnType);
+      peekTypeCheck().add(test);
+      type = popType();
+      pushType(type);
+      return false;
+    }
 
     @Override
     public void endVisit(CompilationUnit node) {
@@ -417,39 +460,39 @@ public class TypeCheckBuilder {
 
     @Override
     public void endVisit(ReturnStatement node) {
-      String name = "ReturnStatement " + node.toString();
+      String name = node.toString();
       generateProofAndAddToObligations(name);
     }
 
     @Override
     public void endVisit(PrefixExpression node) {
-      String name = "PrefixExpression " + node.toString();
+      String name = node.toString();
       generateProofAndAddToObligations(name);
     }
 
     @Override
     public void endVisit(InfixExpression node) {
-      String name = "InfixExpression " + node.toString();
+      String name = node.toString();
       generateProofAndAddToObligations(name);
     }
 
-    // @Override
-    // public void endVisit(FieldAccess node) {
-    //   String name = node.toString();
-    //   generateProofAndAddToObligations(name);
-    // }
+    @Override
+    public void endVisit(FieldAccess node) {
+      String name = node.toString();
+      generateProofAndAddToObligations(name);
+    }
 
-    // @Override
-    // public void endVisit(QualifiedName node) {
-    //   String name = node.toString();
-    //   generateProofAndAddToObligations(name);
-    // }
+    @Override
+    public void endVisit(QualifiedName node) {
+      String name = node.toString();
+      generateProofAndAddToObligations(name);
+    }
 
-    // @Override
-    // public void endVisit(MethodInvocation node) {
-    //   String name = node.toString();
-    //   generateProofAndAddToObligations(name);
-    // }
+    @Override
+    public void endVisit(MethodInvocation node) {
+      String name = node.toString();
+      generateProofAndAddToObligations(name);
+    }
 
     private void resetCounters() {
       statementCounter = 0;
@@ -501,11 +544,9 @@ public class TypeCheckBuilder {
      * NOTE - returnTypeOnSuccess must be a type defined within TypeCheckTypes
      */
     private DynamicTest generateTypeCompatibleTestAndPushResultingType(String leftType, String rightType, String returnTypeOnSuccess) {
-      DynamicTest test = null;
-
       String displayName = leftType + " := " + rightType;
       boolean testValue = TypeCheckTypes.isAssignmentCompatible(leftType, rightType);
-      test = DynamicTest.dynamicTest(displayName, () -> assertTrue(testValue));
+      DynamicTest test = DynamicTest.dynamicTest(displayName, () -> assertTrue(testValue));
       String type = (testValue) ? returnTypeOnSuccess : TypeCheckTypes.ERROR;
 
       pushType(type);
@@ -521,16 +562,12 @@ public class TypeCheckBuilder {
      */
     private DynamicTest generateTypeCompatibleTestAndPushResultingType(String leftType1, String rightType1, 
         String leftType2, String rightType2, String returnTypeOnSuccess) {
-      DynamicTest test = null;
-
       String displayName = (leftType1.equals(leftType2)) ? 
           leftType1 + " := " + rightType1 + "," + rightType2 :
           leftType1 + " := " + rightType1 + ", " + leftType2 + " := " + rightType2;
       boolean testValue = TypeCheckTypes.isAssignmentCompatible(leftType1, rightType1)
           && TypeCheckTypes.isAssignmentCompatible(leftType2, rightType2);
-      System.out.println("left: " + leftType1 + ", right: " + rightType1 + " -> " + TypeCheckTypes.isAssignmentCompatible(leftType1, rightType1)); // deleteme
-      System.out.println("left: " + leftType2 + ", right: " + rightType2 + " -> " + TypeCheckTypes.isAssignmentCompatible(leftType2, rightType2)); // deleteme
-      test = DynamicTest.dynamicTest(displayName, () -> assertTrue(testValue));
+      DynamicTest test = DynamicTest.dynamicTest(displayName, () -> assertTrue(testValue));
       String type = (testValue) ? returnTypeOnSuccess : TypeCheckTypes.ERROR;
 
       pushType(type);
@@ -547,16 +584,68 @@ public class TypeCheckBuilder {
      */
     private DynamicTest generateTypeCompatibleTestAndPushResultingType(String leftType1, String rightType1, 
         String leftType2, String rightType2, String leftType3, String rightType3, String returnTypeOnSuccess) {
-      DynamicTest test = null;
-
       String displayName = (leftType1.equals(leftType2) && leftType1.equals(leftType3)) ?
           leftType1 + " := " + rightType1 + "," + rightType2 + "," + rightType3 :
           leftType1 + " := " + rightType1 + ", " + leftType2 + " := " + rightType2 + ", " + leftType3 + " := " + rightType3;
       boolean testValue = TypeCheckTypes.isAssignmentCompatible(leftType1, rightType1)
           && TypeCheckTypes.isAssignmentCompatible(leftType2, rightType2)
           && TypeCheckTypes.isAssignmentCompatible(leftType3, rightType3);
-      test = DynamicTest.dynamicTest(displayName, () -> assertTrue(testValue));
+      DynamicTest test = DynamicTest.dynamicTest(displayName, () -> assertTrue(testValue));
       String type = (testValue) ? returnTypeOnSuccess : TypeCheckTypes.ERROR;
+
+      pushType(type);
+      return test;
+    }
+
+    /**
+     * Pushes to stack TypeCheckTypes.VOID if expectedNumArgs == actualNumArgs
+     * Otherwise TypeCheckTypes.ERROR
+     */
+    private DynamicTest generateArgumentSizeTestAndPushResultingType(int expectedNumArgs, int actualNumArgs) {
+      String displayName = "Number of arguments: " + expectedNumArgs + " = " + actualNumArgs;
+      boolean correctNumArgs = expectedNumArgs == actualNumArgs;
+      DynamicTest test =
+          DynamicTest.dynamicTest(displayName, () -> assertTrue(correctNumArgs));
+
+      String type = TypeCheckTypes.VOID;
+      if (!correctNumArgs) {
+        type = TypeCheckTypes.ERROR;
+      }
+      pushType(type);
+      return test;
+    }
+
+    /**
+     * Pushes to stack returnTypeOnSuccess if every right pair item is compatible with every left pair item
+     * Otherwise TypeCheckTypes.ERROR
+     *
+     * NOTE - returnTypeOnSuccess must be a type defined within TypeCheckTypes
+     */
+    private DynamicTest generateTypeCompatibleTestAndPushResultingType(List<List<String>> expectedActualPairs, String returnTypeOnSuccess) {
+      if (expectedActualPairs.size() == 0) {
+        String displayName = "No parameters to type check";
+        boolean testValue = true;
+        DynamicTest test = DynamicTest.dynamicTest(displayName, () -> assertTrue(testValue));
+        pushType(returnTypeOnSuccess);
+        return test;
+      }
+
+      boolean typeSafe = true;
+      String displayName = "";
+      for (int i = 0; i < expectedActualPairs.size(); i++) {
+        String leftType = expectedActualPairs.get(i).get(0);
+        String rightType = expectedActualPairs.get(i).get(1);
+        displayName += leftType + " := " + rightType;
+        if (i < expectedActualPairs.size() - 1) {
+          displayName += ", ";
+        }
+        if (!TypeCheckTypes.isAssignmentCompatible(leftType, rightType)) {
+          typeSafe = false;
+        }
+      }
+      boolean testValue = typeSafe;
+      DynamicTest test = DynamicTest.dynamicTest(displayName, () -> assertTrue(testValue));
+      String type = (typeSafe) ? returnTypeOnSuccess : TypeCheckTypes.ERROR;
 
       pushType(type);
       return test;
