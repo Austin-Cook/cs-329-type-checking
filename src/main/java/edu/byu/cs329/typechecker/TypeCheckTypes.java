@@ -38,6 +38,9 @@ public class TypeCheckTypes {
     if (isError(leftType) || isError(rightType)) {
       return false;
     }
+    if (isVoidType(leftType) && isVoidType(rightType)) {
+      return true;
+    }
     if (isNullType(leftType) || isVoidType(leftType)) {
       return false;
     } 
