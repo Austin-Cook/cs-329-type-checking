@@ -609,7 +609,7 @@ public class TypeCheckBuilder {
      */
     private DynamicTest generateArgumentSizeTestAndPushResultingType(
         int expectedNumArgs, int actualNumArgs) {
-      String displayName = "Number of arguments: " + expectedNumArgs + " = " + actualNumArgs;
+      String displayName = "NumArgs (expected: " + expectedNumArgs + ", actual: " + actualNumArgs + ")";
       boolean correctNumArgs = expectedNumArgs == actualNumArgs;
       DynamicTest test =
           DynamicTest.dynamicTest(displayName, () -> assertTrue(correctNumArgs));

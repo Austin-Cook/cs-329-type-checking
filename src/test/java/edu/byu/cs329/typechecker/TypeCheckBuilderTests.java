@@ -1,5 +1,6 @@
 package edu.byu.cs329.typechecker;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import edu.byu.cs329.utils.JavaSourceUtils;
@@ -10,9 +11,11 @@ import java.util.stream.Stream;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +23,14 @@ import org.slf4j.LoggerFactory;
 @DisplayName("Tests for TypeCheckerBuilder")
 public class TypeCheckBuilderTests {
   static final Logger log = LoggerFactory.getLogger(TypeCheckBuilderTests.class);
+  private int numCompilationUnits;
+  private int numTypeDeclarations;
+  private int numMethods;
+  private int numBlocks;
+  private int numStatements;
+  private int numSymbolTableLookups;
+  private int numTypeCompatibleTests;
+  private int numAllSafeTests;
 
   private boolean getTypeChecker(final String fileName, List<DynamicNode> tests) {
     ASTNode compilationUnit = JavaSourceUtils.getAstNodeFor(this, fileName);
@@ -46,6 +57,121 @@ public class TypeCheckBuilderTests {
     }
     DynamicTest test = DynamicTest.dynamicTest("isNotTypeSafe", () -> assertFalse(isTypeSafe));
     return Arrays.asList((DynamicNode)test).stream();
+  }
+
+  /**
+   * Traverses through the DynamicTests to compute and set data about their structure.
+   *
+   * @param tests The DynamicTests to traverse
+   */
+  private void computeStructuralData(List<DynamicNode> tests) {
+    this.numCompilationUnits = 0;
+    this.numTypeDeclarations = 0;
+    this.numMethods = 0;
+    this.numBlocks = 0;
+    this.numStatements = 0;
+    this.numSymbolTableLookups = 0;
+    this.numTypeCompatibleTests = 0;
+    this.numAllSafeTests = 0;
+
+    traverseDynamicTests(tests.stream());
+  }
+
+  private void traverseDynamicTests(Stream<? extends DynamicNode> tests) {
+    tests.forEach(node -> {
+      if (node instanceof DynamicTest) {
+        recordDataForTest((DynamicTest) node);
+        return;
+      }
+      DynamicContainer container = (DynamicContainer) node;
+      recordDataForContainer(container);
+      traverseDynamicTests(container.getChildren());
+    });
+  }
+
+  private void recordDataForTest(DynamicTest test) {
+    var displayName = test.getDisplayName();
+    var isSymbolTableLookup = displayName.matches("E\\((.*)\\) = (.*)");
+    var isTypeCompatibleTest = displayName.matches("(.*):=(.*)");
+    var isAllSafeTest = !isSymbolTableLookup && displayName.matches("(.*) = (.*)");
+    if (isSymbolTableLookup) {
+      this.numSymbolTableLookups += 1;
+    }
+    if (isTypeCompatibleTest) {
+      this.numTypeCompatibleTests += 1;
+    }
+    if (isAllSafeTest) {
+      this.numAllSafeTests += 1;
+    }
+  }
+
+  private void recordDataForContainer(DynamicContainer container) {
+    var displayName = container.getDisplayName();
+    var isCompilationUnit = displayName.matches("CompilationUnit (.*)");
+    var isTypeDeclaration = displayName.matches("class (.*)");
+    var isMethod = displayName.matches("method(.*)");
+    var isBlock = displayName.matches("B\\d+(.*)");
+    var isStatement = displayName.matches("S\\d+(.*)");
+    if (isCompilationUnit) {
+      this.numCompilationUnits += 1;
+    }
+    if (isTypeDeclaration) {
+      this.numTypeDeclarations += 1;
+    }
+    if (isMethod) {
+      this.numMethods += 1;
+    }
+    if (isBlock) {
+      this.numBlocks += 1;
+    }
+    if (isStatement) {
+      this.numStatements += 1;
+    }
+  }
+
+  // private int countStatements(Stream<? extends DynamicNode> tests) {
+  //   return tests.mapToInt(node -> {
+  //     if (node instanceof DynamicTest) {
+  //       return 0;
+  //     }
+  //     DynamicContainer container = (DynamicContainer) node;
+  //     int numberStatements = countStatements(container.getChildren());
+  //     var displayName = container.getDisplayName();
+  //     var isStatement = displayName.matches("S\\d+(.*)");
+  //     return numberStatements + (isStatement ? 1 : 0);
+  //   }).sum();
+  // }
+
+  @Test
+  @Tag("TestTheTests")
+  @Tag("VariableDeclarationStatement")
+  @DisplayName("Should prove type safe and check five statements when given variable declarations with compatible inits")
+  void should_proveTypeSafe_andCheckFiveStatements_when_givenVariableDeclrationsWithCompatibleInits() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenVariableDeclrationsWithCompatibleInits.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+    assertTrue(isTypeSafe);
+
+    computeStructuralData(tests);
+    assertEquals(1, numCompilationUnits);
+    assertEquals(1, numTypeDeclarations);
+    assertEquals(1, this.numMethods);
+    assertEquals(1, this.numBlocks);
+    assertEquals(5, this.numStatements);
+    assertEquals(10, this.numSymbolTableLookups);
+    assertEquals(5, this.numTypeCompatibleTests);
+    assertEquals(this.numCompilationUnits + this.numTypeDeclarations + this.numMethods + this.numBlocks, this.numAllSafeTests);
+
+    // CHECKING FOR
+    // 1) numCompilationUnits
+    // 2) numTypeDeclarations
+    // 3) numMethods
+    // 4) numBlocks
+    // 5) numStatements
+    // 6) numSymbolTableLookups
+    // 7) numTypeCompatibleTests
+    // 8) numAllVoidTests
+
   }
 
   @TestFactory
