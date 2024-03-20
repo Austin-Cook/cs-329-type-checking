@@ -59,11 +59,23 @@ public class TypeCheckBuilderTests {
     return Arrays.asList((DynamicNode)test).stream();
   }
 
-  /**
-   * Traverses through the DynamicTests to compute and set data about their structure.
-   *
-   * @param tests The DynamicTests to traverse
-   */
+  private void testDynamicTestStructure(String fileName, int expCompilationUnits,
+      int expTypeDeclarations, int expMethods, int expBlocks, int expStatements,
+      int expSymbolTableLookups, int expTypeCompatibleTests) {
+    List<DynamicNode> tests = new ArrayList<>();
+    getTypeChecker(fileName, tests);
+    computeStructuralData(tests);
+
+    assertEquals(expCompilationUnits, this.numCompilationUnits);
+    assertEquals(expTypeDeclarations, this.numTypeDeclarations);
+    assertEquals(expMethods, this.numMethods);
+    assertEquals(expBlocks, this.numBlocks);
+    assertEquals(expStatements, this.numStatements);
+    assertEquals(expSymbolTableLookups, this.numSymbolTableLookups);
+    assertEquals(expTypeCompatibleTests, this.numTypeCompatibleTests);
+    assertEquals(expCompilationUnits + expTypeDeclarations + expMethods + expBlocks, this.numAllSafeTests);
+  }
+
   private void computeStructuralData(List<DynamicNode> tests) {
     this.numCompilationUnits = 0;
     this.numTypeDeclarations = 0;
@@ -91,59 +103,33 @@ public class TypeCheckBuilderTests {
 
   private void recordDataForTest(DynamicTest test) {
     var displayName = test.getDisplayName();
-    var isSymbolTableLookup = displayName.matches("E\\((.*)\\) = (.*)");
-    var isTypeCompatibleTest = displayName.matches("(.*):=(.*)");
-    var isAllSafeTest = !isSymbolTableLookup && displayName.matches("(.*) = (.*)");
-    if (isSymbolTableLookup) {
+    if (displayName.matches("E\\((.*)\\) = (.*)")) {
       this.numSymbolTableLookups += 1;
-    }
-    if (isTypeCompatibleTest) {
+    } else if (displayName.matches("(.*):=(.*)")) {
       this.numTypeCompatibleTests += 1;
-    }
-    if (isAllSafeTest) {
+    } else if (displayName.matches("(.*) = (.*)") || displayName.equals("No obligations")) {
       this.numAllSafeTests += 1;
     }
   }
 
   private void recordDataForContainer(DynamicContainer container) {
     var displayName = container.getDisplayName();
-    var isCompilationUnit = displayName.matches("CompilationUnit (.*)");
-    var isTypeDeclaration = displayName.matches("class (.*)");
-    var isMethod = displayName.matches("method(.*)");
-    var isBlock = displayName.matches("B\\d+(.*)");
-    var isStatement = displayName.matches("S\\d+(.*)");
-    if (isCompilationUnit) {
+    if (displayName.matches("CompilationUnit (.*)")) {
       this.numCompilationUnits += 1;
-    }
-    if (isTypeDeclaration) {
+    } else if (displayName.matches("class (.*)")) {
       this.numTypeDeclarations += 1;
-    }
-    if (isMethod) {
+    } else if (displayName.matches("method(.*)")) {
       this.numMethods += 1;
-    }
-    if (isBlock) {
+    } else if (displayName.matches("B\\d+(.*)")) {
       this.numBlocks += 1;
-    }
-    if (isStatement) {
+    } else if (displayName.matches("S\\d+(.*)")) {
       this.numStatements += 1;
     }
   }
 
-  // private int countStatements(Stream<? extends DynamicNode> tests) {
-  //   return tests.mapToInt(node -> {
-  //     if (node instanceof DynamicTest) {
-  //       return 0;
-  //     }
-  //     DynamicContainer container = (DynamicContainer) node;
-  //     int numberStatements = countStatements(container.getChildren());
-  //     var displayName = container.getDisplayName();
-  //     var isStatement = displayName.matches("S\\d+(.*)");
-  //     return numberStatements + (isStatement ? 1 : 0);
-  //   }).sum();
-  // }
-
+  // DELETEME
   @Test
-  @Tag("TestTheTests")
+  @Tag("DynamicTestStructure")
   @Tag("VariableDeclarationStatement")
   @DisplayName("Should prove type safe and check five statements when given variable declarations with compatible inits")
   void should_proveTypeSafe_andCheckFiveStatements_when_givenVariableDeclrationsWithCompatibleInits() {
@@ -153,25 +139,14 @@ public class TypeCheckBuilderTests {
     assertTrue(isTypeSafe);
 
     computeStructuralData(tests);
-    assertEquals(1, numCompilationUnits);
-    assertEquals(1, numTypeDeclarations);
+    assertEquals(1, this.numCompilationUnits);
+    assertEquals(1, this.numTypeDeclarations);
     assertEquals(1, this.numMethods);
     assertEquals(1, this.numBlocks);
     assertEquals(5, this.numStatements);
     assertEquals(10, this.numSymbolTableLookups);
     assertEquals(5, this.numTypeCompatibleTests);
     assertEquals(this.numCompilationUnits + this.numTypeDeclarations + this.numMethods + this.numBlocks, this.numAllSafeTests);
-
-    // CHECKING FOR
-    // 1) numCompilationUnits
-    // 2) numTypeDeclarations
-    // 3) numMethods
-    // 4) numBlocks
-    // 5) numStatements
-    // 6) numSymbolTableLookups
-    // 7) numTypeCompatibleTests
-    // 8) numAllVoidTests
-
   }
 
   @TestFactory
@@ -182,12 +157,26 @@ public class TypeCheckBuilderTests {
     return testTypeSafety_Positive(fileName);
   }
 
+  @Test
+  @DisplayName("Should contain proper structure when given empty class")
+  void should_containProperStructure_when_givenEmptyClass() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenEmptyClass.java";
+    testDynamicTestStructure(fileName, 1, 1, 0, 0, 0, 0, 0);
+  }
+
   @TestFactory
   @Tag("MethodDeclaration")
   @DisplayName("Should prove type safe when given empty method")
   Stream<DynamicNode> should_proveTypeSafe_when_givenEmptyMethod() {
     String fileName = "typeChecker/should_proveTypeSafe_when_givenEmptyMethod.java";
     return testTypeSafety_Positive(fileName);
+  }
+
+  @Test
+  @DisplayName("Should contain proper structure when given empty method")
+  void should_containProperStructure_when_givenEmptyMethod() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenEmptyMethod.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 1, 0, 0, 0);
   }
 
   @TestFactory
@@ -198,12 +187,27 @@ public class TypeCheckBuilderTests {
     return testTypeSafety_Positive(fileName);
   }
 
+  // HERE
+  @Test
+  @DisplayName("Should contain proper structure when given empty block")
+  void should_containProperStructure_when_givenEmptyBlock() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenEmptyBlock.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 1, 0, 0, 0);
+  }
+
   @TestFactory
   @Tag("VariableDeclarationStatement")
   @DisplayName("Should prove type safe when given variable declarations no inits")
   Stream<DynamicNode> should_proveTypeSafe_when_givenVariableDeclrationsNoInits() {
     String fileName = "typeChecker/should_proveTypeSafe_when_givenVariableDeclrationsNoInits.java";
     return testTypeSafety_Positive(fileName);
+  }
+
+  @Test
+  @DisplayName("Should contain proper structure when given variable declarations no inits")
+  void should_containProperStructure_when_givenVariableDeclrationsNoInit() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenVariableDeclrationsNoInits.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 1, 3, 3, 0);
   }
 
   @TestFactory
@@ -214,12 +218,26 @@ public class TypeCheckBuilderTests {
     return testTypeSafety_Positive(fileName);
   }
 
+  @Test
+  @DisplayName("Should contain proper structure when given variable declarations with compatible inits")
+  void should_containProperStructure_when_givenVariableDeclrationsWithCompatibleInits() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenVariableDeclrationsWithCompatibleInits.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 1, 5, 10, 5);
+  }
+
   @TestFactory
   @Tag("VariableDeclarationStatement")
   @DisplayName("Should not prove type safe when given bad inits")
   Stream<DynamicNode> should_NotProveTypeSafe_when_givenBadInits() {
     String fileName = "typeChecker/should_NotProveTypeSafe_when_givenBadInits.java";
     return testTypeSafety_Negative(fileName, false);
+  }
+
+  @Test
+  @DisplayName("Should contain proper structure when given bad inits")
+  void should_containProperStructure_when_givenBadInits() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenBadInits.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 1, 4, 8, 4);
   }
 
   @TestFactory
@@ -230,12 +248,26 @@ public class TypeCheckBuilderTests {
     return testTypeSafety_Positive(fileName);
   }
 
+  @Test
+  @DisplayName("Should contain proper structure when given assignment with compatible operands")
+  void should_containProperStructure_when_givenAssignmentWithCompatibleOperands() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenAssignmentWithCompatibleOperands.java";
+    testDynamicTestStructure(fileName, 1, 1, 2, 2, 12, 18, 7);
+  }
+
   @TestFactory
   @DisplayName("Should not prove type safe when given assignment where operands do not match")
   @Tag("Assignment")
   Stream<DynamicNode> should_NotProveTypeSafe_when_givenAssignmentWhereOperandsDoNotMatch() {
     String fileName = "typeChecker/should_NotProveTypeSafe_when_givenAssignmentWhereOperandsDoNotMatch.java";
     return testTypeSafety_Negative(fileName, false);
+  }
+
+  @Test
+  @DisplayName("Should contain proper structure when given assignment where operands do not match")
+  void should_containProperStructure_when_givenAssignmentWhereOperandsDoNotMatch() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenAssignmentWhereOperandsDoNotMatch.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 1, 2, 3, 1);
   }
 
   @TestFactory
@@ -246,6 +278,13 @@ public class TypeCheckBuilderTests {
     return testTypeSafety_Positive(fileName);
   }
 
+  @Test
+  @DisplayName("Should contain proper structure when given if statement with compatible types")
+  void should_containProperStructure_when_givenIfStatementWithCompatibleTypes() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenIfStatementWithCompatibleTypes.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 4, 2, 2, 2);
+  }
+
   @TestFactory
   @Tag("IfStatement")
   @DisplayName("Should not prove type safe when given if statement with type unsafe expression")
@@ -254,12 +293,26 @@ public class TypeCheckBuilderTests {
     return testTypeSafety_Negative(fileName, false);
   }
 
+  @Test
+  @DisplayName("Should contain proper structure when given if statement with type unsafe expression")
+  void should_containProperStructure_when_givenIfStatementWithTypeUnsafeExpression() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenIfStatementWithTypeUnsafeExpression.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 2, 1, 1, 1);
+  }
+
   @TestFactory
   @Tag("IfStatement")
   @DisplayName("Should not prove type safe when given if statement with type unsafe then statement")
   Stream<DynamicNode> should_NotProveTypeSafe_when_givenIfStatementWithTypeUnsafeThenStatement() {
     String fileName = "typeChecker/should_NotProveTypeSafe_when_givenIfStatementWithTypeUnsafeThenStatement.java";
-    return testTypeSafety_Negative(fileName, false);
+    return testTypeSafety_Negative(fileName, false); 
+  }
+
+  @Test
+  @DisplayName("Should contain proper structure when given if statement with type unsafe then statement")
+  void should_containProperStructure_when_givenIfStatementWithTypeUnsafeThenStatement() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenIfStatementWithTypeUnsafeThenStatement.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 2, 2, 3, 2);
   }
 
   @TestFactory
@@ -270,12 +323,26 @@ public class TypeCheckBuilderTests {
     return testTypeSafety_Negative(fileName, false);
   }
 
+  @Test
+  @DisplayName("Should contain proper structure when given if statement with type unsafe else statement")
+  void should_containProperStructure_when_givenIfStatementWithTypeUnsafeElseStatement() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenIfStatementWithTypeUnsafeElseStatement.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 3, 2, 3, 2);
+  }
+
   @TestFactory
   @Tag("WhileStatement")
   @DisplayName("Should prove type safe when given while statement with compatible types")
   Stream<DynamicNode> should_proveTypeSafe_when_givenWhileStatementWithCompatibleTypes() {
     String fileName = "typeChecker/should_proveTypeSafe_when_givenWhileStatementWithCompatibleTypes.java";
     return testTypeSafety_Positive(fileName);
+  }
+
+  @Test
+  @DisplayName("Should contain proper structure when given while statement with compatible types")
+  void should_containProperStructure_when_givenWhileStatementWithCompatibleTypes() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenWhileStatementWithCompatibleTypes.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 2, 1, 1, 1);
   }
 
   @TestFactory
@@ -286,12 +353,26 @@ public class TypeCheckBuilderTests {
     return testTypeSafety_Negative(fileName, false);
   }
 
+  @Test
+  @DisplayName("Should contain proper structure when given while statement with type unsafe expression")
+  void should_containProperStructure_when_givenWhileStatementWithTypeUnsafeExpression() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenWhileStatementWithTypeUnsafeExpression.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 2, 1, 1, 1);
+  }
+
   @TestFactory
   @Tag("WhileStatement")
   @DisplayName("Should not prove type safe when given while statement with type unsafe block")
   Stream<DynamicNode> should_NotProveTypeSafe_when_givenWhileStatementWithTypeUnsafeBlock() {
     String fileName = "typeChecker/should_NotProveTypeSafe_when_givenWhileStatementWithTypeUnsafeBlock.java";
     return testTypeSafety_Negative(fileName, false);
+  }
+
+  @Test
+  @DisplayName("Should contain proper structure when given while statement with type unsafe block")
+  void should_containProperStructure_when_givenWhileStatementWithTypeUnsafeBlock() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenWhileStatementWithTypeUnsafeBlock.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 2, 2, 3, 2);
   }
 
   @TestFactory
@@ -302,12 +383,26 @@ public class TypeCheckBuilderTests {
     return testTypeSafety_Positive(fileName);
   }
 
+  @Test
+  @DisplayName("Should contain proper structure when given return with compatible type")
+  void should_containProperStructure_when_givenReturnWithCompatibleType() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenReturnWithCompatibleType.java";
+    testDynamicTestStructure(fileName, 1, 1, 3, 3, 2, 2, 2);
+  }
+
   @TestFactory
   @Tag("ReturnStatement")
   @DisplayName("Should not prove type safe when given return with incompatible type")
   Stream<DynamicNode> should_NotProveTypeSafe_when_givenReturnWithIncompatibleType() {
     String fileName = "typeChecker/should_NotProveTypeSafe_when_givenReturnWithIncompatibleType.java";
     return testTypeSafety_Negative(fileName, false);
+  }
+
+  @Test
+  @DisplayName("Should contain proper structure when given return with incompatible type")
+  void should_containProperStructure_when_givenReturnWithIncompatibleType() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenReturnWithIncompatibleType.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 1, 1, 1, 1);
   }
 
   @TestFactory
@@ -318,6 +413,13 @@ public class TypeCheckBuilderTests {
     return testTypeSafety_Positive(fileName);
   }
 
+  @Test
+  @DisplayName("Should contain proper structure when given not prefix expression with compatible operand")
+  void should_containProperStructure_when_givenNotPrefixExpressionWithCompatibleOperand() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenNotPrefixExpressionWithCompatibleOperand.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 1, 1, 2, 2);
+  }
+
   @TestFactory
   @Tag("PrefixExpression")
   @DisplayName("Should not prove type safe when given not prefix expression where operand is not boolean")
@@ -326,12 +428,26 @@ public class TypeCheckBuilderTests {
     return testTypeSafety_Negative(fileName, false);
   }
 
+  @Test
+  @DisplayName("Should contain proper structure when given not prefix expression where operand is not boolean")
+  void should_containProperStructure_when_givenNotPrefixExpressionWhereOperandIsNotBoolean() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenNotPrefixExpressionWhereOperandIsNotBoolean.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 1, 2, 4, 3);
+  }
+
   @TestFactory
   @Tag("InfixExpression")
   @DisplayName("Should prove type safe when given infix expression with compatible operands")
   Stream<DynamicNode> should_proveTypeSafe_when_givenInfixExpressionWithCompatibleOperands() {
     String fileName = "typeChecker/should_proveTypeSafe_when_givenInfixExpressionWithCompatibleOperands.java";
     return testTypeSafety_Positive(fileName);
+  }
+
+  @Test
+  @DisplayName("Should contain proper structure when given infix expression with compatible operands")
+  void should_containProperStructure_when_givenInfixExpressionWithCompatibleOperands() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenInfixExpressionWithCompatibleOperands.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 1, 9, 23, 14);
   }
 
   @TestFactory
@@ -343,6 +459,13 @@ public class TypeCheckBuilderTests {
     return testTypeSafety_Negative(fileName, false);
   }
 
+  @Test
+  @DisplayName("Should contain proper structure when given infix expression with plus minus times where operand not int")
+  void should_containProperStructure_when_givenInfixExpressionWithPlusMinusTimesWhereOperandNotInt() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenInfixExpressionWithPlusMinusTimesWhereOperandNotInt.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 1, 1, 3, 2);
+  }
+
   @TestFactory
   @Tag("InfixExpression")
   @Tag("AndOr")
@@ -350,6 +473,13 @@ public class TypeCheckBuilderTests {
   Stream<DynamicNode> should_NotProveTypeSafe_when_givenInfixExpressionWithAndOrWhereOperandNotBool() {
     String fileName = "typeChecker/should_NotProveTypeSafe_when_givenInfixExpressionWithAndOrWhereOperandNotBool.java";
     return testTypeSafety_Negative(fileName, false);
+  }
+
+  @Test
+  @DisplayName("Should contain proper structure when given infix expression with and or where operand not bool")
+  void should_containProperStructure_when_givenInfixExpressionWithAndOrWhereOperandNotBool() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenInfixExpressionWithAndOrWhereOperandNotBool.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 1, 1, 3, 2);
   }
 
   @TestFactory
@@ -361,6 +491,13 @@ public class TypeCheckBuilderTests {
     return testTypeSafety_Negative(fileName, false);
   }
 
+  @Test
+  @DisplayName("Should contain proper structure when given infix expression with less than where operand not int")
+  void should_containProperStructure_when_givenInfixExpressionWithLessThanWhereOperandNotInt() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenInfixExpressionWithLessThanWhereOperandNotInt.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 1, 1, 3, 2);
+  }
+
   @TestFactory
   @Tag("InfixExpression")
   @Tag("Equals")
@@ -368,6 +505,13 @@ public class TypeCheckBuilderTests {
   Stream<DynamicNode> should_NotProveTypeSafe_when_givenInfixExpressionWithEqualsWhereOperandNotObject() {
     String fileName = "typeChecker/should_NotProveTypeSafe_when_givenInfixExpressionWithEqualsWhereOperandNotObject.java";
     return testTypeSafety_Negative(fileName, false);
+  }
+
+  @Test
+  @DisplayName("Should contain proper structure when given infix expression with equals where operand not object")
+  void should_containProperStructure_when_givenInfixExpressionWithEqualsWhereOperandNotObject() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenInfixExpressionWithEqualsWhereOperandNotObject.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 1, 2, 5, 3);
   }
 
   @TestFactory
@@ -378,12 +522,26 @@ public class TypeCheckBuilderTests {
     return testTypeSafety_Positive(fileName);
   }
 
+  @Test
+  @DisplayName("Should contain proper structure when given field access with compatible type")
+  void should_containProperStructure_when_givenFieldAccessWithCompatibleType() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenFieldAccessWithCompatibleType.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 1, 3, 6, 3);
+  }
+
   @TestFactory
   @Tag("FieldAccess")
   @DisplayName("Should not prove type safe when given field access with incompatible type")
   Stream<DynamicNode> should_NotProveTypeSafe_when_givenFieldAccessWithIncompatibleType() {
     String fileName = "typeChecker/should_NotProveTypeSafe_when_givenFieldAccessWithIncompatibleType.java";
     return testTypeSafety_Negative(fileName, false);
+  }
+
+  @Test
+  @DisplayName("Should contain proper structure when given field access with incompatible type")
+  void should_containProperStructure_when_givenFieldAccessWithIncompatibleType() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenFieldAccessWithIncompatibleType.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 1, 1, 2, 1);
   }
 
   @TestFactory
@@ -394,12 +552,26 @@ public class TypeCheckBuilderTests {
     return testTypeSafety_Positive(fileName);
   }
 
+  @Test
+  @DisplayName("Should contain proper structure when given qualified name with compatible type")
+  void should_containProperStructure_when_givenQualifiedNameWithCompatibleType() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenQualifiedNameWithCompatibleType.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 1, 3, 6, 3);
+  }
+
   @TestFactory
   @Tag("QualifiedName")
   @DisplayName("Should not prove type safe when given qualified name with incompatible type")
   Stream<DynamicNode> should_NotProveTypeSafe_when_givenQualifiedNameWithIncompatibleType() {
     String fileName = "typeChecker/should_NotProveTypeSafe_when_givenQualifiedNameWithIncompatibleType.java";
     return testTypeSafety_Negative(fileName, false);
+  }
+
+  @Test
+  @DisplayName("Should contain proper structure when given qualified name with incompatible type")
+  void should_containProperStructure_when_givenQualifiedNameWithIncompatibleType() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenQualifiedNameWithIncompatibleType.java";
+    testDynamicTestStructure(fileName, 1, 1, 1, 1, 1, 2, 1);
   }
 
   @TestFactory
@@ -410,6 +582,14 @@ public class TypeCheckBuilderTests {
     return testTypeSafety_Positive(fileName);
   }
 
+  @Test
+  @DisplayName("Should contain proper structure when given method invocation with compatible types")
+  void should_containProperStructure_when_givenMethodInvocationWithCompatibleTypes() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenMethodInvocationWithCompatibleTypes.java";
+    // incompatible type means that the compatibility test for 'a' in 'a(true)' is not run
+    testDynamicTestStructure(fileName, 1, 1, 4, 4, 4, 11, 6);
+  }
+
   @TestFactory
   @Tag("MethodInvocation")
   @DisplayName("Should not prove type safe when given method invocation with incorrect number of parameters")
@@ -418,11 +598,26 @@ public class TypeCheckBuilderTests {
     return testTypeSafety_Negative(fileName, false);
   }
 
+  @Test
+  @DisplayName("Should contain proper structure when given method invocation with incorrect number of parameters")
+  void should_containProperStructure_when_givenMethodInvocationWithIncorrectNumberOfParameters() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenMethodInvocationWithIncorrectNumberOfParameters.java";
+    // incorrect num parameters means that the compatibility test for '1' in 'a(1)'' is not run
+    testDynamicTestStructure(fileName, 1, 1, 2, 2, 2, 3, 2);
+  }
+
   @TestFactory
   @Tag("MethodInvocation")
   @DisplayName("Should not prove type safe when given method invocation with parameters with incompatable types")
   Stream<DynamicNode> should_NotProveTypeSafe_when_givenMethodInvocationWithParametersWithIncompatableTypes() {
     String fileName = "typeChecker/should_NotProveTypeSafe_when_givenMethodInvocationWithParametersWithIncompatableTypes.java";
     return testTypeSafety_Negative(fileName, false);
+  }
+
+  @Test
+  @DisplayName("Should contain proper structure when given method invocation with parameters with incompatable types")
+  void should_containProperStructure_when_givenMethodInvocationWithParametersWithIncompatableTypes() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenMethodInvocationWithParametersWithIncompatableTypes.java";
+    testDynamicTestStructure(fileName, 1, 1, 2, 2, 0, 2, 1);
   }
 }

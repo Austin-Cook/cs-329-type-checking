@@ -365,6 +365,7 @@ public class TypeCheckBuilder {
       String methodName = AstNodePropertiesUtils.getName(node);
       String name = TypeCheckUtils.buildName(qualifier, methodName);
       String methodReturnType = symbolTable.getType(name);
+      generateLookupTestAndAddToObligations(name, methodReturnType);
       List<SimpleImmutableEntry<String, String>> parameterTypeList =
           symbolTable.getParameterTypeList(name);
       List<Expression> argumentList = AstNodePropertiesUtils.getArguments(node);
@@ -609,7 +610,7 @@ public class TypeCheckBuilder {
      */
     private DynamicTest generateArgumentSizeTestAndPushResultingType(
         int expectedNumArgs, int actualNumArgs) {
-      String displayName = "NumArgs (expected: " + expectedNumArgs + ", actual: " + actualNumArgs + ")";
+      String displayName = "numArgs (expected: " + expectedNumArgs + ", actual: " + actualNumArgs + ")";
       boolean correctNumArgs = expectedNumArgs == actualNumArgs;
       DynamicTest test =
           DynamicTest.dynamicTest(displayName, () -> assertTrue(correctNumArgs));
@@ -692,7 +693,7 @@ public class TypeCheckBuilder {
     }
 
     private DynamicTest generateNoObligation() {
-      return DynamicTest.dynamicTest("true", () -> assertTrue(true));
+      return DynamicTest.dynamicTest("No obligations", () -> assertTrue(true));
     }
 
     private String generateProvesDisplayName(String name, String type) {
