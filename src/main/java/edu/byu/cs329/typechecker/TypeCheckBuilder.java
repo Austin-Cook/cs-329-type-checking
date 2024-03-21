@@ -588,10 +588,8 @@ public class TypeCheckBuilder {
     private DynamicTest generateTypeCompatibleTestAndPushResultingType(
         String leftType1, String rightType1, String leftType2, String rightType2,
         String leftType3, String rightType3, String returnTypeOnSuccess) {
-      String displayName = (leftType1.equals(leftType2) && leftType1.equals(leftType3))
-          ? leftType1 + " := " + rightType1 + "," + rightType2 + "," + rightType3
-          : leftType1 + " := " + rightType1 + ", " + leftType2 + " := " + rightType2 + ", "
-              + leftType3 + " := " + rightType3;
+      String displayName = leftType1 + " := " + rightType1 + ", " + leftType2 + " := " + rightType2 + ", "
+          + leftType3 + " := " + rightType3;
       boolean testValue = TypeCheckTypes.isAssignmentCompatible(leftType1, rightType1)
           && TypeCheckTypes.isAssignmentCompatible(leftType2, rightType2)
           && TypeCheckTypes.isAssignmentCompatible(leftType3, rightType3);

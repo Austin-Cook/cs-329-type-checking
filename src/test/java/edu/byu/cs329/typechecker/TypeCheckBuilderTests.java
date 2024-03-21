@@ -734,11 +734,31 @@ public class TypeCheckBuilderTests {
     assertTrue(countainerNameFound(regex, tests.stream()));
   }
 
+  @Test
+  @Tag("IfStatement")
+  @DisplayName("Should not prove type safe when given if else statement where expression is not type safe")
+  void should_notProveTypeSafe_when_givenIfElseStatementWhereExpressionIsNotTypeSafe() {
+    String fileName = "typeChecker/mutation/should_notProveTypeSafe_when_givenIfElseStatementWhereExpressionIsNotTypeSafe.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+    assertFalse(isTypeSafe);
+  }
+
+  @Test
+  @Tag("IfStatement")
+  @DisplayName("Should not prove type safe when given if else statement where then block is not type safe")
+  void should_notProveTypeSafe_when_givenIfElseStatementWhereThenBlockIsNotTypeSafe() {
+    String fileName = "typeChecker/mutation/should_notProveTypeSafe_when_givenIfElseStatementWhereThenBlockIsNotTypeSafe.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+    assertFalse(isTypeSafe);
+  }
+
    // Same test - but not running as Dynamic Test increases coverage
    @Test
    @Tag("VariableDeclarationStatement")
-   @DisplayName("Should prove type safe and check five statements when given variable declarations with compatible inits")
-   void should_proveTypeSafe_andCheckFiveStatements_when_givenVariableDeclrationsWithCompatibleInits() {
+   @DisplayName("Should prove type safe when given variable declarations with compatible inits not dynamic test")
+   void should_proveTypeSafe_andCheckFiveStatements_when_givenVariableDeclrationsWithCompatibleInits_notDynamicTest() {
      String fileName = "typeChecker/should_proveTypeSafe_when_givenVariableDeclrationsWithCompatibleInits.java";
      List<DynamicNode> tests = new ArrayList<>();
      boolean isTypeSafe = getTypeChecker(fileName, tests);
@@ -776,5 +796,16 @@ public class TypeCheckBuilderTests {
     List<DynamicNode> tests = new ArrayList<>();
     boolean isTypeSafe = getTypeChecker(fileName, tests);
     assertFalse(isTypeSafe);
+  }
+
+  // Same test - but not running as Dynamic Test increases coverage
+  @Test
+  @Tag("IfStatement")
+  @DisplayName("Should prove type safe when given if statement with compatible types not dynamic test")
+  void should_proveTypeSafe_when_givenIfStatementWithCompatibleTypes_notDynamicTest() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenIfStatementWithCompatibleTypes.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+    assertTrue(isTypeSafe);
   }
 }
