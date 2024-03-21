@@ -1,19 +1,27 @@
 package typeChecker;
 
 public class C {
-  int a(int a, boolean b) {
+  int a(int a, boolean b, C c) {
     return 1;
   }
 
   void b() {}
 
-  static int c(int a, boolean b) {
+  void d() {
+    return;
+  }
+
+  static int c(int a, boolean b, C c) {
     return 1;
   }
 
   void m() {
-    int i = a(1, true);
+    int x = 3;
+    boolean y = true;
+    C c;
+    int i = a(1, true, c);
     b();
-    i = C.c(2, false);
+    d();
+    i = C.c(2, false, c);
   }
 }

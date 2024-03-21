@@ -282,18 +282,13 @@ public class TypeCheckBuilder {
       pushTypeCheck(new ArrayList<>());
       PrefixExpression.Operator operator = node.getOperator();
       String type = TypeCheckTypes.VOID;
-
-      if (operator.equals(PrefixExpression.Operator.NOT)) {
-        Expression operand = node.getOperand();
-        operand.accept(this);
-        type = popType();
-        DynamicTest test = generateTypeCompatibleTestAndPushResultingType(
-            TypeCheckTypes.BOOL, type, TypeCheckTypes.BOOL);
-        peekTypeCheck().add(test);
-        type = popType();
-      }
-      
-      pushType(type);
+      assert(operator.equals(PrefixExpression.Operator.NOT));
+      Expression operand = node.getOperand();
+      operand.accept(this);
+      type = popType();
+      DynamicTest test = generateTypeCompatibleTestAndPushResultingType(
+          TypeCheckTypes.BOOL, type, TypeCheckTypes.BOOL);
+      peekTypeCheck().add(test);
       return false;
     }
 
@@ -359,9 +354,7 @@ public class TypeCheckBuilder {
     @Override
     public boolean visit(MethodInvocation node) {
       pushTypeCheck(new ArrayList<>());
-      Expression exp = node.getExpression();
-      String qualifier = (exp == null) ? className :
-          AstNodePropertiesUtils.getName((SimpleName) exp);
+      String qualifier = className;
       String methodName = AstNodePropertiesUtils.getName(node);
       String name = TypeCheckUtils.buildName(qualifier, methodName);
       String methodReturnType = symbolTable.getType(name);
@@ -726,6 +719,7 @@ public class TypeCheckBuilder {
 
     private String peekType() {
       return typeStack.peek();
+      // return "hello!";
     }
 
     private String generateBlockName() {
