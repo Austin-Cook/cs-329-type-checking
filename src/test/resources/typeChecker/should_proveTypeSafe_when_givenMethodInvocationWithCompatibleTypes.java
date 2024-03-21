@@ -23,5 +23,6 @@ public class C {
     b();
     d();
     i = C.c(2, false, c);
+    C.c(2, false, c); // DELETEME
   }
 }

@@ -31,6 +31,7 @@ public class TypeCheckBuilderTests {
   private int numSymbolTableLookups;
   private int numTypeCompatibleTests;
   private int numAllSafeTests;
+  private int numTests;
 
   private boolean getTypeChecker(final String fileName, List<DynamicNode> tests) {
     ASTNode compilationUnit = JavaSourceUtils.getAstNodeFor(this, fileName);
@@ -84,20 +85,21 @@ public class TypeCheckBuilderTests {
     this.numSymbolTableLookups = 0;
     this.numTypeCompatibleTests = 0;
     this.numAllSafeTests = 0;
+    this.numTests = 0;
 
     traverseDynamicTests(tests.stream());
   }
 
-  // private boolean testNameFound(String regex, Stream<? extends DynamicNode> tests) {
-  //   tests.anyMatch(node -> {
-  //     if (node instanceof DynamicTest) {
-  //       DynamicTest test = (DynamicTest) node;
-  //       return test.getDisplayName().matches(regex);
-  //     }
-  //     DynamicContainer container = (DynamicContainer) node;
-  //     return testFoundInTests(regex, container.getChildren());
-  //   });
-  // }
+  private boolean testNameFound(String regex, Stream<? extends DynamicNode> tests) {
+    return tests.anyMatch(node -> {
+      if (node instanceof DynamicTest) {
+        DynamicTest test = (DynamicTest) node;
+        return test.getDisplayName().matches(regex);
+      }
+      DynamicContainer container = (DynamicContainer) node;
+      return testNameFound(regex, container.getChildren());
+    });
+  }
 
   private boolean countainerNameFound(String regex, Stream<? extends DynamicNode> tests) {
     return tests.anyMatch(node -> {
@@ -125,6 +127,7 @@ public class TypeCheckBuilderTests {
   }
 
   private void recordDataForTest(DynamicTest test) {
+    this.numTests += 1;
     var displayName = test.getDisplayName();
     if (displayName.matches("E\\((.*)\\) = (.*)")) {
       this.numSymbolTableLookups += 1;
@@ -588,7 +591,7 @@ public class TypeCheckBuilderTests {
   void should_containProperStructure_when_givenMethodInvocationWithCompatibleTypes() {
     String fileName = "typeChecker/should_proveTypeSafe_when_givenMethodInvocationWithCompatibleTypes.java";
     // incompatible type means that the compatibility test for 'a' in 'a(true)' is not run
-    testDynamicTestStructure(fileName, 5, 5, 8, 19, 9);
+    testDynamicTestStructure(fileName, 5, 5, 8, 23, 10);
   }
 
   @TestFactory
@@ -633,13 +636,101 @@ public class TypeCheckBuilderTests {
   }
 
   @Test
-  @Tag("")
+  @Tag("TestStructure")
   @DisplayName("Should exist container with return type in name when given container")
   void should_existContainerWithReturnTypeInName_whenGivenContainer() {
     String fileName = "typeChecker/mutation/should_existContainerWithReturnTypeInName_whenGivenContainer.java";
     List<DynamicNode> tests = new ArrayList<>();
     getTypeChecker(fileName, tests);
     String regex = "class(.*)" + TypeCheckTypes.VOID;
+    assertTrue(countainerNameFound(regex, tests.stream()));
+  }
+
+  @Test
+  @Tag("TestStructure")
+  @Tag("NullLiteral")
+  @DisplayName("Should exist container with null type in name when given container")
+  void should_existContainerWithNullTypeInName_whenGivenContainer() {
+    String fileName = "typeChecker/mutation/should_existContainerWithNullTypeInName_whenGivenContainer.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    getTypeChecker(fileName, tests);
+    String regex = "null(.*)" + TypeCheckTypes.NULL;
+    assertTrue(countainerNameFound(regex, tests.stream()));
+  }
+
+  @Test
+  @Tag("TestStructure")
+  @Tag("PrefixExpression")
+  @DisplayName("Should exist container with not in name when given container")
+  void should_existContainerWithNotTypeInName_whenGivenContainer() {
+    String fileName = "typeChecker/mutation/should_existContainerWithNotTypeInName_whenGivenContainer.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    getTypeChecker(fileName, tests);
+    String regex = "!(.*)" + TypeCheckTypes.BOOL;
+    assertTrue(countainerNameFound(regex, tests.stream()));
+  }
+
+  @Test
+  @Tag("TestStructure")
+  @Tag("FieldAccess")
+  @DisplayName("Should exist container with this dot in name when given container")
+  void should_existContainerWithFieldAccessInName_whenGivenContainer() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenFieldAccessWithCompatibleType.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    getTypeChecker(fileName, tests);
+    String regex = "this\\.(.*)" + TypeCheckTypes.BOOL;
+    assertTrue(countainerNameFound(regex, tests.stream()));
+  }
+
+  @Test
+  @Tag("TestStructure")
+  @Tag("QualifiedName")
+  @DisplayName("Should exist container with qualified name in name when given container")
+  void should_existContainerWithQualifiedNameInName_whenGivenContainer() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenQualifiedNameWithCompatibleType.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    getTypeChecker(fileName, tests);
+    String regex = "C\\.a(.*)";
+    assertTrue(countainerNameFound(regex, tests.stream()));
+  }
+
+  @Test
+  @Tag("TestStructure")
+  @DisplayName("Should not prove type safe when given variable of incorrect type")
+  void should_notProveTypeSafe_when_givenVariableOfIncorrectType() {
+    String fileName = "typeChecker/mutation/should_notProveTypeSafe_when_givenVariableOfIncorrectType.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+    assertFalse(isTypeSafe);
+  }
+
+  @Test
+  @DisplayName("Should contain correct num tests when given empty class")
+  void should_containCorrectNumTests_when_givenEmptyClass() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenEmptyClass.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    getTypeChecker(fileName, tests);
+    computeStructuralData(tests);
+    assertEquals(2, this.numTests);
+  }
+
+  @Test
+  @DisplayName("Should exist no obligation test when given empty class")
+  void should_existnoobligationtest_when_givenEmptyClass() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenEmptyClass.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    getTypeChecker(fileName, tests);
+    String regex = "No obligations(.*)";
+    assertTrue(testNameFound(regex, tests.stream()));
+  }
+
+  @Test
+  @DisplayName("Should exist container where statement returns void when given safe variable declaration statement")
+  void should_existContainerWhereStatementReturnsVoid_whenGivenSafeVariableDeclarationStatement() {
+    String fileName = "typeChecker/mutation/should_existContainerWhereStatementReturnsVoid_whenGivenSafeVariableDeclarationStatement.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    getTypeChecker(fileName, tests);
+    String regex = "S\\d+(.*)" + TypeCheckTypes.VOID + "(.*)";
     assertTrue(countainerNameFound(regex, tests.stream()));
   }
 
@@ -663,5 +754,27 @@ public class TypeCheckBuilderTests {
     List<DynamicNode> tests = new ArrayList<>();
     boolean isTypeSafe = getTypeChecker(fileName, tests);
     assertTrue(isTypeSafe);
+  }
+
+  // Same test - but not running as Dynamic Test increases coverage
+  @Test
+  @Tag("InfixExpression")
+  @DisplayName("Should prove type safe when given infix expression with compatible operands not dynamic test")
+  void should_proveTypeSafe_when_givenInfixExpressionWithCompatibleOperands_notDynamicTest() {
+    String fileName = "typeChecker/should_proveTypeSafe_when_givenInfixExpressionWithCompatibleOperands.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+    assertTrue(isTypeSafe);
+  }
+
+  // Same test - but not running as Dynamic Test increases coverage
+  @Test
+  @Tag("MethodInvocation")
+  @DisplayName("Should not prove type safe when given method invocation with parameters with incompatable types not dynamic test")
+  void should_NotProveTypeSafe_when_givenMethodInvocationWithParametersWithIncompatableTypes_notDynamicTest() {
+    String fileName = "typeChecker/should_NotProveTypeSafe_when_givenMethodInvocationWithParametersWithIncompatableTypes.java";
+    List<DynamicNode> tests = new ArrayList<>();
+    boolean isTypeSafe = getTypeChecker(fileName, tests);
+    assertFalse(isTypeSafe);
   }
 }

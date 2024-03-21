@@ -97,11 +97,11 @@ public class TypeCheckBuilder {
 
       String name = TypeCheckUtils.buildName(className, AstNodePropertiesUtils.getName(node));
 
-      List<SimpleImmutableEntry<String, String>> typeList = symbolTable.getParameterTypeList(name);
+      // List<SimpleImmutableEntry<String, String>> typeList = symbolTable.getParameterTypeList(name);
       symbolTable.pushScope();
-      for (SimpleImmutableEntry<String, String> entry : typeList) {
-        symbolTable.addLocal(entry.getKey(), entry.getValue());
-      }
+      // for (SimpleImmutableEntry<String, String> entry : typeList) {
+      //   symbolTable.addLocal(entry.getKey(), entry.getValue());
+      // }
 
       symbolTable.addLocal("this", className);
       String type = symbolTable.getType(name);
@@ -123,7 +123,11 @@ public class TypeCheckBuilder {
       List<String> typeList = new ArrayList<String>();
       for (Object statement : node.statements()) {
         ((Statement) statement).accept(this);
-        typeList.add(popType());
+        String type = popType();
+        if (!type.equals(TypeCheckTypes.ERROR)) {
+          type = TypeCheckTypes.VOID;
+        }
+        typeList.add(type);
       }
 
       DynamicTest test = generateAllVoidTestAndPushResultingType(typeList);
@@ -507,7 +511,8 @@ public class TypeCheckBuilder {
       String type = peekType();
       String displayName = generateProvesDisplayName(name, type);
       List<DynamicNode> proofs = popTypeCheck();
-      addNoObligationIfEmpty(proofs);
+      assert (proofs.size() > 0);
+      // addNoObligationIfEmpty(proofs);
       DynamicContainer proof = DynamicContainer.dynamicContainer(displayName, proofs.stream());
       List<DynamicNode> obligations = peekTypeCheck();
       obligations.add(proof);
@@ -642,9 +647,7 @@ public class TypeCheckBuilder {
         argument.accept(this);
         String rightType = popType();
         displayName += leftType + " := " + rightType;
-        if (i < parameterTypeList.size() - 1) {
-          displayName += ", ";
-        }
+        displayName += ", ";
         if (!TypeCheckTypes.isAssignmentCompatible(leftType, rightType)) {
           typeSafe = false;
         }
@@ -678,12 +681,12 @@ public class TypeCheckBuilder {
     }
 
 
-    private void addNoObligationIfEmpty(List<DynamicNode> proofs) {
-      if (proofs.size() > 0) {
-        return;
-      }
-      proofs.add(generateNoObligation());
-    }
+    // private void addNoObligationIfEmpty(List<DynamicNode> proofs) {
+    //   if (proofs.size() > 0) {
+    //     return;
+    //   }
+    //   proofs.add(generateNoObligation());
+    // }
 
     private DynamicTest generateNoObligation() {
       return DynamicTest.dynamicTest("No obligations", () -> assertTrue(true));
