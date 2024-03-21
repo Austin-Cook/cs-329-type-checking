@@ -97,7 +97,8 @@ public class TypeCheckBuilder {
 
       String name = TypeCheckUtils.buildName(className, AstNodePropertiesUtils.getName(node));
 
-      // List<SimpleImmutableEntry<String, String>> typeList = symbolTable.getParameterTypeList(name);
+      // List<SimpleImmutableEntry<String, String>> typeList = 
+      //     symbolTable.getParameterTypeList(name);
       symbolTable.pushScope();
       // for (SimpleImmutableEntry<String, String> entry : typeList) {
       //   symbolTable.addLocal(entry.getKey(), entry.getValue());
@@ -286,7 +287,7 @@ public class TypeCheckBuilder {
       pushTypeCheck(new ArrayList<>());
       PrefixExpression.Operator operator = node.getOperator();
       String type = TypeCheckTypes.VOID;
-      assert(operator.equals(PrefixExpression.Operator.NOT));
+      assert (operator.equals(PrefixExpression.Operator.NOT));
       Expression operand = node.getOperand();
       operand.accept(this);
       type = popType();
@@ -588,8 +589,8 @@ public class TypeCheckBuilder {
     private DynamicTest generateTypeCompatibleTestAndPushResultingType(
         String leftType1, String rightType1, String leftType2, String rightType2,
         String leftType3, String rightType3, String returnTypeOnSuccess) {
-      String displayName = leftType1 + " := " + rightType1 + ", " + leftType2 + " := " + rightType2 + ", "
-          + leftType3 + " := " + rightType3;
+      String displayName = leftType1 + " := " + rightType1 + ", " + leftType2 + " := "
+          + rightType2 + ", " + leftType3 + " := " + rightType3;
       boolean testValue = TypeCheckTypes.isAssignmentCompatible(leftType1, rightType1)
           && TypeCheckTypes.isAssignmentCompatible(leftType2, rightType2)
           && TypeCheckTypes.isAssignmentCompatible(leftType3, rightType3);
@@ -606,7 +607,8 @@ public class TypeCheckBuilder {
      */
     private DynamicTest generateArgumentSizeTestAndPushResultingType(
         int expectedNumArgs, int actualNumArgs) {
-      String displayName = "numArgs (expected: " + expectedNumArgs + ", actual: " + actualNumArgs + ")";
+      String displayName = "numArgs (expected: " + expectedNumArgs
+          + ", actual: " + actualNumArgs + ")";
       boolean correctNumArgs = expectedNumArgs == actualNumArgs;
       DynamicTest test =
           DynamicTest.dynamicTest(displayName, () -> assertTrue(correctNumArgs));
@@ -720,7 +722,6 @@ public class TypeCheckBuilder {
 
     private String peekType() {
       return typeStack.peek();
-      // return "hello!";
     }
 
     private String generateBlockName() {
