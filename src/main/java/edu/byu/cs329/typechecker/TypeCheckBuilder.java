@@ -97,11 +97,12 @@ public class TypeCheckBuilder {
 
       String name = TypeCheckUtils.buildName(className, AstNodePropertiesUtils.getName(node));
 
-      List<SimpleImmutableEntry<String, String>> typeList = symbolTable.getParameterTypeList(name);
+      // List<SimpleImmutableEntry<String, String>> typeList = 
+      //     symbolTable.getParameterTypeList(name);
       symbolTable.pushScope();
-      for (SimpleImmutableEntry<String, String> entry : typeList) {
-        symbolTable.addLocal(entry.getKey(), entry.getValue());
-      }
+      // for (SimpleImmutableEntry<String, String> entry : typeList) {
+      //   symbolTable.addLocal(entry.getKey(), entry.getValue());
+      // }
 
       symbolTable.addLocal("this", className);
       String type = symbolTable.getType(name);
@@ -123,7 +124,11 @@ public class TypeCheckBuilder {
       List<String> typeList = new ArrayList<String>();
       for (Object statement : node.statements()) {
         ((Statement) statement).accept(this);
-        typeList.add(popType());
+        String type = popType();
+        if (!type.equals(TypeCheckTypes.ERROR)) {
+          type = TypeCheckTypes.VOID;
+        }
+        typeList.add(type);
       }
 
       DynamicTest test = generateAllVoidTestAndPushResultingType(typeList);
@@ -282,18 +287,13 @@ public class TypeCheckBuilder {
       pushTypeCheck(new ArrayList<>());
       PrefixExpression.Operator operator = node.getOperator();
       String type = TypeCheckTypes.VOID;
-
-      if (operator.equals(PrefixExpression.Operator.NOT)) {
-        Expression operand = node.getOperand();
-        operand.accept(this);
-        type = popType();
-        DynamicTest test = generateTypeCompatibleTestAndPushResultingType(
-            TypeCheckTypes.BOOL, type, TypeCheckTypes.BOOL);
-        peekTypeCheck().add(test);
-        type = popType();
-      }
-      
-      pushType(type);
+      assert (operator.equals(PrefixExpression.Operator.NOT));
+      Expression operand = node.getOperand();
+      operand.accept(this);
+      type = popType();
+      DynamicTest test = generateTypeCompatibleTestAndPushResultingType(
+          TypeCheckTypes.BOOL, type, TypeCheckTypes.BOOL);
+      peekTypeCheck().add(test);
       return false;
     }
 
@@ -359,12 +359,11 @@ public class TypeCheckBuilder {
     @Override
     public boolean visit(MethodInvocation node) {
       pushTypeCheck(new ArrayList<>());
-      Expression exp = node.getExpression();
-      String qualifier = (exp == null) ? className :
-          AstNodePropertiesUtils.getName((SimpleName) exp);
+      String qualifier = className;
       String methodName = AstNodePropertiesUtils.getName(node);
       String name = TypeCheckUtils.buildName(qualifier, methodName);
       String methodReturnType = symbolTable.getType(name);
+      generateLookupTestAndAddToObligations(name, methodReturnType);
       List<SimpleImmutableEntry<String, String>> parameterTypeList =
           symbolTable.getParameterTypeList(name);
       List<Expression> argumentList = AstNodePropertiesUtils.getArguments(node);
@@ -513,7 +512,8 @@ public class TypeCheckBuilder {
       String type = peekType();
       String displayName = generateProvesDisplayName(name, type);
       List<DynamicNode> proofs = popTypeCheck();
-      addNoObligationIfEmpty(proofs);
+      assert (proofs.size() > 0);
+      // addNoObligationIfEmpty(proofs);
       DynamicContainer proof = DynamicContainer.dynamicContainer(displayName, proofs.stream());
       List<DynamicNode> obligations = peekTypeCheck();
       obligations.add(proof);
@@ -589,10 +589,8 @@ public class TypeCheckBuilder {
     private DynamicTest generateTypeCompatibleTestAndPushResultingType(
         String leftType1, String rightType1, String leftType2, String rightType2,
         String leftType3, String rightType3, String returnTypeOnSuccess) {
-      String displayName = (leftType1.equals(leftType2) && leftType1.equals(leftType3))
-          ? leftType1 + " := " + rightType1 + "," + rightType2 + "," + rightType3
-          : leftType1 + " := " + rightType1 + ", " + leftType2 + " := " + rightType2 + ", "
-              + leftType3 + " := " + rightType3;
+      String displayName = leftType1 + " := " + rightType1 + ", " + leftType2 + " := "
+          + rightType2 + ", " + leftType3 + " := " + rightType3;
       boolean testValue = TypeCheckTypes.isAssignmentCompatible(leftType1, rightType1)
           && TypeCheckTypes.isAssignmentCompatible(leftType2, rightType2)
           && TypeCheckTypes.isAssignmentCompatible(leftType3, rightType3);
@@ -609,7 +607,8 @@ public class TypeCheckBuilder {
      */
     private DynamicTest generateArgumentSizeTestAndPushResultingType(
         int expectedNumArgs, int actualNumArgs) {
-      String displayName = "Number of arguments: " + expectedNumArgs + " = " + actualNumArgs;
+      String displayName = "numArgs (expected: " + expectedNumArgs
+          + ", actual: " + actualNumArgs + ")";
       boolean correctNumArgs = expectedNumArgs == actualNumArgs;
       DynamicTest test =
           DynamicTest.dynamicTest(displayName, () -> assertTrue(correctNumArgs));
@@ -648,9 +647,7 @@ public class TypeCheckBuilder {
         argument.accept(this);
         String rightType = popType();
         displayName += leftType + " := " + rightType;
-        if (i < parameterTypeList.size() - 1) {
-          displayName += ", ";
-        }
+        displayName += ", ";
         if (!TypeCheckTypes.isAssignmentCompatible(leftType, rightType)) {
           typeSafe = false;
         }
@@ -684,15 +681,15 @@ public class TypeCheckBuilder {
     }
 
 
-    private void addNoObligationIfEmpty(List<DynamicNode> proofs) {
-      if (proofs.size() > 0) {
-        return;
-      }
-      proofs.add(generateNoObligation());
-    }
+    // private void addNoObligationIfEmpty(List<DynamicNode> proofs) {
+    //   if (proofs.size() > 0) {
+    //     return;
+    //   }
+    //   proofs.add(generateNoObligation());
+    // }
 
     private DynamicTest generateNoObligation() {
-      return DynamicTest.dynamicTest("true", () -> assertTrue(true));
+      return DynamicTest.dynamicTest("No obligations", () -> assertTrue(true));
     }
 
     private String generateProvesDisplayName(String name, String type) {

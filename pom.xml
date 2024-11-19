@@ -26,8 +26,8 @@
 		<junit.standalone.version>1.9.1</junit.standalone.version>
 		<mockito.version>4.8.0</mockito.version>
 		<jacoco.version>0.8.8</jacoco.version>
-		<pitest.version>1.9.8</pitest.version>
-		<pitest.junit5.plugin.version>1.1.0</pitest.junit5.plugin.version>
+		<pitest.version>1.15.8</pitest.version>
+		<pitest.junit5.plugin.version>1.2.1</pitest.junit5.plugin.version>
 	</properties>
 
 	<dependencies>
@@ -192,6 +192,12 @@
 					</dependency>
 				</dependencies>
 				<configuration>
+					<targetClasses>
+						<param>edu.byu.cs329.typechecker.TypeCheckBuilder*</param>
+					</targetClasses>
+					<targetTests>
+						<param>edu.byu.cs329.typechecker.TypeCheckBuilderTests</param>
+					</targetTests>
 					<mutators>
 						<mutator>STRONGER</mutator>
 					</mutators>
